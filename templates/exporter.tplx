@@ -1,0 +1,230 @@
+% Base template which defines defaults for every object
+((*- extends 'style_jupyter.tex.j2' -*))
+
+% Modify the docclass
+((* block docclass *))
+\documentclass{article}
+
+\usepackage{placeins}
+
+\AtBeginDocument{
+\heavyrulewidth=.08em
+\lightrulewidth=.05em
+\cmidrulewidth=.03em
+\belowrulesep=.65ex
+\belowbottomsep=0pt
+\aboverulesep=.4ex
+\abovetopsep=0pt
+\cmidrulesep=\doublerulesep
+\cmidrulekern=.5em
+\defaultaddspace=.5em
+}
+((* endblock docclass *))
+
+% Keep most of the contents of base, but make sure figures have captions
+((* block packages *))
+    \usepackage[breakable]{tcolorbox}
+    \usepackage{parskip} % Stop auto-indenting (to mimic markdown behaviour)
+    \usepackage{iftex}
+    \ifPDFTeX
+        \usepackage[T1]{fontenc}
+        \usepackage{mathpazo}
+    \else
+        \usepackage{fontspec}
+    \fi
+
+    % Basic figure setup, for now with no caption control since it's done
+    % automatically by Pandoc (which extracts ![](path) syntax from Markdown).
+    \usepackage{graphicx}
+
+    \usepackage{float}
+    \floatplacement{figure}{H} % forces figures to be placed at the correct location
+    \usepackage{xcolor} % Allow colors to be defined
+    \usepackage{enumerate} % Needed for markdown enumerations to work
+    \usepackage{geometry} % Used to adjust the document margins
+    \usepackage{amsmath} % Equations
+    \usepackage{amssymb} % Equations
+    \usepackage{textcomp} % defines textquotesingle
+    % Hack from http://tex.stackexchange.com/a/47451/13684:
+    \AtBeginDocument{%
+        \def\PYZsq{\textquotesingle}% Upright quotes in Pygmentized code
+    }
+    \usepackage{upquote} % Upright quotes for verbatim code
+    \usepackage{eurosym} % defines \euro
+    \usepackage[mathletters]{ucs} % Extended unicode (utf-8) support
+    \usepackage{fancyvrb} % verbatim replacement that allows latex
+    \usepackage{grffile} % extends the file name processing of package graphics
+                         % to support a larger range
+    \makeatletter % fix for old versions of grffile with XeLaTeX
+    \@ifpackagelater{grffile}{2019/11/01}
+    {
+      % Do nothing on new versions
+    }
+    {
+      \def\Gread@@xetex#1{%
+        \IfFileExists{"\Gin@base".bb}%
+        {\Gread@eps{\Gin@base.bb}}%
+        {\Gread@@xetex@aux#1}%
+      }
+    }
+    \makeatother
+    \usepackage[Export]{adjustbox} % Used to constrain images to a maximum size
+    \adjustboxset{max size={0.9\linewidth}{0.9\paperheight}}
+
+    % The hyperref package gives us a pdf with properly built
+    % internal navigation ('pdf bookmarks' for the table of contents,
+    % internal cross-reference links, web links for URLs, etc.)
+    \usepackage{hyperref}
+    % The default LaTeX title has an obnoxious amount of whitespace. By default,
+    % titling removes some of it. It also provides customization options.
+    \usepackage{titling}
+    \usepackage{longtable} % longtable support required by pandoc >1.10
+    \usepackage{booktabs}  % table support for pandoc > 1.12.2
+    \usepackage[inline]{enumitem} % IRkernel/repr support (it uses the enumerate* environment)
+    \usepackage[normalem]{ulem} % ulem is needed to support strikethroughs (\sout)
+                                % normalem makes italics be italics, not underlines
+    \usepackage{mathrsfs}
+((* endblock packages *))
+
+
+% Author and Title from metadata
+((* block maketitle *))
+
+((*- if nb.metadata["latex_metadata"]: -*))
+((*- if nb.metadata["latex_metadata"]["author"]: -*))
+    \author{((( nb.metadata["latex_metadata"]["author"] )))}
+((*- endif *))
+((*- else -*))
+    \author{Anonymous}
+((*- endif *))
+
+((*- if nb.metadata["latex_metadata"]: -*))
+((*- if nb.metadata["latex_metadata"]["affiliation"]: -*))
+    \affiliation{((( nb.metadata["latex_metadata"]["affiliation"] )))}
+((*- endif *))
+((*- endif *))
+
+((*- if nb.metadata["latex_metadata"]: -*))
+((*- if nb.metadata["latex_metadata"]["title"]: -*))
+    \title{\vspace{-1.0cm}((( nb.metadata["latex_metadata"]["title"] )))}
+((*- endif *))
+((*- else -*))
+    \title{((( resources.metadata.name )))}
+((*- endif *))
+
+\date{\today}
+\maketitle
+((* endblock maketitle *))
+
+
+% Render abstract
+((* block abstract *))
+((*- if nb.metadata["latex_metadata"]: -*))
+((*- if nb.metadata["latex_metadata"]["abstract"]: -*))
+    \abstract{((( nb.metadata["latex_metadata"]["abstract"] )))}
+((*- endif *))
+((*- endif *))
+((* endblock abstract *))
+
+
+% Render markdown
+((* block markdowncell scoped *))
+    ((*- if cell.metadata.hidden: -*))
+    ((*- else -*))
+        ((( cell.source | citation2latex | strip_files_prefix | convert_pandoc('markdown+tex_math_double_backslash', 'json',extra_args=[]) | resolve_references | convert_pandoc('json','latex'))))
+    ((*- endif *))
+((* endblock markdowncell *))
+
+% New mechanism for rendering figures with captions
+((*- block data_png -*))
+((*- if cell.metadata.widefigure: -*))
+    ((( draw_widefigure_with_caption(output.metadata.filenames['image/png'], cell.metadata.caption, cell.metadata.label) )))
+((*- else -*))
+    ((*- if cell.metadata.caption: -*))
+        ((*- if cell.metadata.label: -*))
+            ((( draw_figure_with_caption(output.metadata.filenames['image/png'], cell.metadata.caption, cell.metadata.label) )))
+        ((*- else -*))
+            ((( draw_figure_with_caption(output.metadata.filenames['image/png'], cell.metadata.caption, "") )))
+        ((*- endif *))
+    ((*- else -*))
+        ((( draw_figure_with_caption(output.metadata.filenames['image/png'], "") )))
+    ((*- endif *))
+((*- endif *))
+((*- endblock -*))
+
+((*- block data_jpg -*))
+((*- if cell.metadata.caption: -*))
+    ((*- if cell.metadata.label: -*))
+        ((( draw_figure_with_caption(output.metadata.filenames['image/jpeg'], cell.metadata.caption, cell.metadata.label) )))
+    ((*- else -*))
+        ((( draw_figure_with_caption(output.metadata.filenames['image/jpeg'], cell.metadata.caption, "") )))
+    ((*- endif *))
+((*- else -*))
+    ((( draw_figure_with_caption(output.metadata.filenames['image/jpeg'], "") )))
+((*- endif *))
+((*- endblock -*))
+
+((*- block data_svg -*))
+((*- if cell.metadata.caption: -*))
+    ((*- if cell.metadata.label: -*))
+        ((( draw_figure_with_caption(output.metadata.filenames['image/svg+xml'], cell.metadata.caption, cell.metadata.label) )))
+    ((*- else -*))
+        ((( draw_figure_with_caption(output.metadata.filenames['image/svg+xml'], cell.metadata.caption, "") )))
+    ((*- endif *))
+((*- else -*))
+    ((( draw_figure_with_caption(output.metadata.filenames['image/svg+xml'], "") )))
+((*- endif *))
+((*- endblock -*))
+
+((*- block data_pdf -*))
+((*- if output.metadata.widefigure: -*))
+    ((( draw_widefigure_with_caption(output.metadata.filenames['application/pdf'], output.metadata.caption, output.metadata.label) )))
+((*- else -*))
+    ((*- if output.metadata.caption: -*))
+        ((*- if output.metadata.label: -*))
+            ((( draw_figure_with_caption(output.metadata.filenames['application/pdf'], output.metadata.caption, output.metadata.label) )))
+        ((*- else -*))
+            ((( draw_figure_with_caption(output.metadata.filenames['application/pdf'], output.metadata.caption, "") )))
+        ((*- endif *))
+    ((*- else -*))
+        ((( draw_figure_with_caption(output.metadata.filenames['application/pdf'], "") )))
+    ((*- endif *))
+((*- endif *))
+((*- endblock -*))
+
+% Draw a figure using the graphicx package.
+((* macro draw_figure_with_caption(filename, caption, label) -*))
+((* set filename = filename | posix_path *))
+((*- block figure scoped -*))
+    \begin{figure}
+        \begin{center}\adjustimage{max size={0.9\linewidth}{0.4\paperheight}}{((( filename )))}\end{center}
+        \caption{((( caption )))}
+        \label{((( label )))}
+    \end{figure}
+((*- endblock figure -*))
+((*- endmacro *))
+
+% Draw a figure using the graphicx package.
+((* macro draw_widefigure_with_caption(filename, caption, label) -*))
+((* set filename = filename | posix_path *))
+((*- block figure_wide scoped -*))
+    \begin{figure*}
+        \begin{center}\adjustimage{max size={0.9\linewidth}{0.4\paperheight}}{((( filename )))}\end{center}
+        \caption{((( caption )))}
+        \label{((( label )))}
+    \end{figure*}
+((*- endblock figure_wide -*))
+((*- endmacro *))
+
+
+% Modify markdown tables
+((*- block data_markdown -*))
+((*- if output.metadata['text/markdown'].table: -*))
+    \begin{longtable}[]{(((output.metadata['text/markdown'].table.align)))}
+        \caption{(((output.metadata['text/markdown'].table.caption)))}\\
+    %((( output.data['text/markdown'] | citation2latex | strip_files_prefix | convert_pandoc('markdown+tex_math_double_backslash', 'latex'))))
+    ((*- else -*))
+        ((( output.data['text/markdown'] | citation2latex | strip_files_prefix | convert_pandoc('markdown+tex_math_double_backslash', 'latex'))))
+((*- endif *))
+((*- endblock data_markdown -*))
+

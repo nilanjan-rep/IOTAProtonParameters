@@ -1,0 +1,10 @@
+% Base template which defines defaults for every object
+((*- extends 'exporter.tplx' -*))
+
+% Suppress input cells
+((* block input_group *))
+((* endblock input_group *))
+
+% Suppress stdout
+((*- block stream -*))
+((*- endblock stream -*))
